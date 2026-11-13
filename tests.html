@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prüfprotokoll Nivellement</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #1f2933; }
+  h1 { font-size: 20px; } h2 { font-size: 16px; margin-top: 24px; }
+  table { border-collapse: collapse; width: 100%; max-width: 900px; }
+  th, td { border: 1px solid #cbd2d9; padding: 4px 8px; text-align: left; }
+  th { background: #e4e7eb; }
+  .ok { color: #0b6e4f; font-weight: 600; } .fail { color: #b42318; font-weight: 600; }
+  #gesamt { font-size: 16px; padding: 8px 12px; border-radius: 6px; display: inline-block; }
+  #gesamt.ok { background: #d1fadf; } #gesamt.fail { background: #fee4e2; }
+</style>
+</head>
+<body>
+<h1>Prüfprotokoll – Testfälle A–C</h1>
+<p>Automatische Prüfung des Rechenkerns <code>core.js</code> gegen die Sollwerte aus dem Auftrag.</p>
+<div id="gesamt"></div>
+<div id="out"></div>
+<script src="core.js?v=1.0.1"></script>
+<script src="beispiele.js?v=1.0.1"></script>
+<script>
+(function () {
+  var C = NivCore, B = NivBeispiele, out = document.getElementById('out');
+  var total = 0, failed = 0, protokoll = [];
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function gruppe(titel, checks) {
+    var h = '<h2>' + titel + '</h2><table><tr><th>Größe</th><th>Soll</th><th>Ist</th><th>Ergebnis</th></tr>';
+    checks.forEach(function (c) {
+      total++;
+      var ok = c[1] === c[2];
+      if (!ok) failed++;
+      protokoll.push({ gruppe: titel, groesse: c[0], soll: c[1], ist: c[2], ok: ok });
+      h += '<tr><td>' + c[0] + '</td><td>' + c[1] + '</td><td>' + c[2] + '</td><td class="' + (ok ? 'ok">✓ o.k.' : 'fail">✗ FEHLER') + '</td></tr>';
+    });
+    out.insertAdjacentHTML('beforeend', h + '</table>');
+  }
+  var M = C.fmtM, MM = C.fmtMM;
+  function idx(p, name) { for (var i = 0; i < p.zeilen.length; i++) if (p.zeilen[i].punkt === name) return i; return -1; }
+
+  // Testfall A
+  var pA = clone(B.A.projekt), rA = C.auswerten(pA);
+  gruppe('Testfall A – Übung 1 (LfVT-Feldbuch, ohne Endhöhe)', [
+    ['ΣR [m]', '16,044', M(rA.sum.R)],
+    ['ΣV [m]', '21,090', M(rA.sum.V)],
+    ['ΔH = ΣR − ΣV [m]', '−5,046', M(rA.aus.dHist)],
+    ['H_WP1 [m]', '74,311', M(rA.rows[idx(pA, 'WP1')].H)],
+    ['H_5 [m]', '73,991', M(rA.rows[idx(pA, '5')].H)],
+    ['H_10 [m]', '69,429', M(rA.rows[idx(pA, '10')].H)],
+    ['H_E [m ü. NHN]', '69,205', M(rA.sum.HEgem)],
+    ['Rechenprobe ΣR−ΣV = ΣΔh = H_E−H_A', 'o.k.', rA.sum.probe ? 'o.k.' : 'Fehler'],
+    ['Fehlerverteilung', 'keine', rA.aus.verteilt ? 'ja' : 'keine'],
+    ['Hinweis „Messfehler bleiben unentdeckt“', 'angezeigt', rA.hinweise.some(function (h) { return /unentdeckt/.test(h); }) ? 'angezeigt' : 'fehlt'],
+    ['Plausibilitätsmeldungen', '0', String(rA.plaus.length)]
+  ]);
+
+  // Testfall B
+  var pB = clone(B.B.projekt), rB = C.auswerten(pB);
+  var Ks = rB.setups.map(function (s) { return MM(s.K, true); }).join(' / ');
+  gruppe('Testfall B – Lehrbuchbeispiel mit Zwischenpunkt (Konvention a, RWTH)', [
+    ['ΣR [m]', '8,632', M(rB.sum.R)],
+    ['ΣV [m]', '4,851', M(rB.sum.V)],
+    ['ΔH_ist [m]', '+3,781', M(rB.aus.dHist, true)],
+    ['ΔH_soll [m]', '+3,785', M(rB.aus.dHsoll, true)],
+    ['W [mm]', '+4', MM(rB.aus.W, true)],
+    ['s [m]', '130', C.fmtZw(rB.strecke.S)],
+    ['f [mm]', '5,4', C.fmtDez(rB.aus.f, 1)],
+    ['|W| ≤ f', 'eingehalten', rB.aus.fOk ? 'eingehalten' : 'nicht eingehalten'],
+    ['K je Aufstellung [mm]', '+2 / +1 / +1', Ks],
+    ['ΣK = W', 'o.k.', rB.aus.probeK ? 'o.k.' : 'Fehler'],
+    ['H korrigiert W1 [m]', '433,432', M(rB.rows[idx(pB, 'W1')].Hk)],
+    ['H korrigiert Z [m]', '434,218', M(rB.rows[idx(pB, 'Z')].Hk)],
+    ['H korrigiert W2 [m]', '434,361', M(rB.rows[idx(pB, 'W2')].Hk)],
+    ['H korrigiert ② [m]', '435,135', M(rB.rows[idx(pB, '2')].Hk)],
+    ['H gemessen Z (Zwischenwert) [m]', '434,215', M(rB.rows[idx(pB, 'Z')].H)],
+    ['Rechenprobe', 'o.k.', rB.sum.probe ? 'o.k.' : 'Fehler']
+  ]);
+  var pB2 = clone(B.B.projekt); pB2.einst = { wKonv: 'b' };
+  var rB2 = C.auswerten(pB2);
+  gruppe('Testfall B – Gegenprobe Konvention b (Infoblatt HSBK: W = Ist − Soll)', [
+    ['W [mm]', '−4', MM(rB2.aus.W, true)],
+    ['K je Aufstellung [mm] (umgekehrtes Vorzeichen zu W)', '+2 / +1 / +1', rB2.setups.map(function (s) { return MM(s.K, true); }).join(' / ')],
+    ['H korrigiert ② [m]', '435,135', M(rB2.rows[idx(pB2, '2')].Hk)]
+  ]);
+
+  // Testfall C
+  var pC = clone(B.C.projekt), rC = C.auswerten(pC);
+  gruppe('Testfall C – Infoblatt HSBK (Δh-Bildung)', [
+    ['Δh (500 → WP1) [m]', '+0,360', M(rC.rows[idx(pC, 'WP1')].dh, true)],
+    ['Δh (WP1 → 100) [m]', '+0,105', M(rC.rows[idx(pC, '100')].dh, true)],
+    ['Δh (100 → 1) [m]', '−0,080', M(rC.rows[idx(pC, '1')].dh, true)],
+    ['Δh (100 → 2) [m]', '−0,165', M(rC.rows[idx(pC, '2')].dh, true)],
+    ['Δh (100 → 3) [m]', '−0,180', M(rC.rows[idx(pC, '3')].dh, true)],
+    ['Plausibilität: Hinweis „endet mit einem Vorblick“', 'angezeigt', rC.plaus.some(function (p) { return /endet mit einem Vorblick/.test(p.text); }) ? 'angezeigt' : 'fehlt']
+  ]);
+
+  // Zusatzprüfungen
+  var pL = { HA: '100,000', schleife: true, einst: {}, zeilen: [
+    { punkt: 'A', zwR: '20', R: '1,500' }, { punkt: 'WP1', zwV: '20', V: '1,000', zwR: '25', R: '1,200' }, { punkt: 'A', zwV: '25', V: '1,703' }] };
+  var rL = C.auswerten(pL);
+  var pF = { HA: '10,000', einst: {}, zeilen: [{ punkt: 'A', R: '1,000' }, { punkt: 'B', V: '1,000' }, { punkt: 'C', R: '1,000' }] };
+  var rF = C.auswerten(pF);
+  var xl = C.buildXlsx(clone(B.B.projekt), rB);
+  gruppe('Zusatzprüfungen', [
+    ['Schleife: ΔH_soll [m]', '±0,000', M(rL.aus.dHsoll, true)],
+    ['Schleife: W = Soll − Ist [mm]', '+3', MM(rL.aus.W, true)],
+    ['Schleife: ΣK = W', 'o.k.', rL.aus.probeK ? 'o.k.' : 'Fehler'],
+    ['Schleife: H_korr A (Ende) = H_A', '100,000', M(rL.rows[2].Hk)],
+    ['Rundung rund(−5/2) (vom Nullpunkt weg)', '−3', MM(C.rndDiv(-5, 2))],
+    ['Rundung rund(5/2)', '+3', MM(C.rndDiv(5, 2), true)],
+    ['Eingabe „2.431“ (Punkt statt Komma)', '2,431', M(C.parseFix('2.431', 3).v)],
+    ['Eingabe „2,4315“ abgelehnt', 'abgelehnt', C.parseFix('2,4315', 3).err ? 'abgelehnt' : 'angenommen'],
+    ['Plausibilität: R, V, R → „endet mit Vorblick“', 'angezeigt', rF.plaus.some(function (p) { return /endet mit einem Vorblick/.test(p.text); }) ? 'angezeigt' : 'fehlt'],
+    ['XLSX erzeugt (ZIP-Signatur PK)', 'PK', String.fromCharCode(xl[0], xl[1])]
+  ]);
+
+  var g = document.getElementById('gesamt');
+  g.className = failed ? 'fail' : 'ok';
+  g.textContent = failed ? failed + ' von ' + total + ' Prüfungen fehlgeschlagen' : 'Alle ' + total + ' Prüfungen bestanden ✓';
+  window.PROTOKOLL = { total: total, failed: failed, eintraege: protokoll };
+})();
+</script>
+</body>
+</html>

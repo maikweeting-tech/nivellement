@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nivellement Lern-App</title>
+<meta name="description" content="Lern-, Übungs- und Auswertewerkzeug für das geometrische Liniennivellement mit Zwischenpunkten (Fachschule Bautechnik).">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --text: #1f2933; --muted: #5f6b7a; --border: #cbd2d9; --border-soft: #e4e7eb;
+  --accent: #1d4ed8; --accent-text: #ffffff; --accent-soft: #e6edfd;
+  --in-bg: #fff8d6; --in-border: #e3c95a; --calc-bg: #eef1f5;
+  --ok: #0b6e4f; --ok-bg: #dcf5e8; --err: #b42318; --err-bg: #fde8e7; --warn: #8a5a00; --warn-bg: #fff2cc; --info: #1e4e8c; --info-bg: #e7f0fc;
+  --r-col: #1d4ed8; --v-col: #c2410c; --z-col: #6b7280;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161c; --surface: #1b2129; --text: #e4e7eb; --muted: #9aa5b1; --border: #3a4552; --border-soft: #2a323d;
+    --accent: #6d9cff; --accent-text: #0b1220; --accent-soft: #1f2d4a;
+    --in-bg: #2e2a17; --in-border: #7a6a2a; --calc-bg: #232a33;
+    --ok: #5fd3a1; --ok-bg: #12382a; --err: #ff8a80; --err-bg: #3d1e1c; --warn: #f2c94c; --warn-bg: #3a3116; --info: #9cc3ff; --info-bg: #1b2b44;
+    --r-col: #7aa2ff; --v-col: #ff9a6b; --z-col: #a0a8b3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161c; --surface: #1b2129; --text: #e4e7eb; --muted: #9aa5b1; --border: #3a4552; --border-soft: #2a323d;
+  --accent: #6d9cff; --accent-text: #0b1220; --accent-soft: #1f2d4a;
+  --in-bg: #2e2a17; --in-border: #7a6a2a; --calc-bg: #232a33;
+  --ok: #5fd3a1; --ok-bg: #12382a; --err: #ff8a80; --err-bg: #3d1e1c; --warn: #f2c94c; --warn-bg: #3a3116; --info: #9cc3ff; --info-bg: #1b2b44;
+  --r-col: #7aa2ff; --v-col: #ff9a6b; --z-col: #a0a8b3;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+header.top { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.top-inner { display: flex; align-items: center; gap: 12px; padding: 8px 16px; flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.brand img { width: 26px; height: 26px; }
+.projname { color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 120px; min-width: 0; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; user-select: none; }
+.switch input { width: 40px; height: 22px; appearance: none; background: var(--border); border-radius: 11px; position: relative; cursor: pointer; margin: 0; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { left: 21px; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; padding: 0 12px; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button { border: 0; background: none; color: var(--muted); padding: 9px 12px; font: inherit; font-size: 14px; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; }
+nav.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+main { max-width: 1400px; margin: 0 auto; padding: 16px; }
+section.tab { display: none; }
+section.tab.on { display: block; }
+.card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.card h2 { margin: 0 0 10px; font-size: 16px; }
+.card h3 { margin: 14px 0 6px; font-size: 15px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px; }
+label.f { display: flex; flex-direction: column; font-size: 12.5px; color: var(--muted); gap: 3px; }
+label.f input, label.f select, label.f textarea { font: inherit; font-size: 15px; color: var(--text); }
+input, select, textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; min-width: 0; }
+input.in, label.f input.in { background: var(--in-bg); border-color: var(--in-border); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+input.bad { border-color: var(--err) !important; background: var(--err-bg) !important; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button.b { font: inherit; font-size: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+button.b:hover { border-color: var(--accent); }
+button.b.pri { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button.b.warnb { color: var(--err); }
+button.b.sm { padding: 3px 8px; font-size: 13px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+details.einst summary { cursor: pointer; color: var(--accent); font-size: 14px; margin-top: 10px; }
+/* Feldbuch-Tabelle */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+table.fb { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14px; }
+table.fb th, table.fb td { border-right: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); padding: 3px 4px; white-space: nowrap; }
+table.fb th { background: var(--accent-soft); font-size: 12px; font-weight: 600; text-align: center; padding: 6px 4px; line-height: 1.2; vertical-align: bottom; }
+table.fb th small { display: block; font-weight: 400; color: var(--muted); }
+table.fb td.n { text-align: center; color: var(--muted); font-size: 11.5px; min-width: 44px; }
+table.fb td.n .typ { display: block; font-weight: 700; font-size: 11px; color: var(--text); }
+table.fb tr.w td.n { background: var(--warn-bg); }
+table.fb tr.e td.n { background: var(--err-bg); }
+table.fb td.st, table.fb th.st { position: sticky; left: 0; z-index: 2; }
+table.fb td.st { background: var(--surface); }
+table.fb th.st { z-index: 3; }
+table.fb input { width: 100%; padding: 5px 6px; font-size: 14px; text-align: right; font-variant-numeric: tabular-nums; }
+table.fb input.in { background: var(--in-bg); border-color: var(--in-border); }
+table.fb td.c-punkt input { text-align: left; width: 72px; }
+table.fb td.c-zw input { width: 54px; }
+table.fb td.c-abl input { width: 74px; }
+table.fb td.c-bem input { text-align: left; width: 200px; }
+table.fb td.calc { background: var(--calc-bg); text-align: right; font-variant-numeric: tabular-nums; min-width: 72px; padding: 3px 7px; }
+table.fb td.calc.k { min-width: 46px; }
+body.lern td.calc:not(:empty), body.lern .kv[data-x] { cursor: help; text-decoration: underline dotted var(--accent); text-underline-offset: 3px; }
+body.lern td.calc:not(:empty):hover, body.lern .kv[data-x]:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+td.act { white-space: nowrap; }
+td.act button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 2px 5px; }
+td.act button:hover { color: var(--accent); }
+.legend-in { display: inline-block; width: 14px; height: 14px; background: var(--in-bg); border: 1px solid var(--in-border); vertical-align: middle; border-radius: 3px; }
+.legend-calc { display: inline-block; width: 14px; height: 14px; background: var(--calc-bg); border: 1px solid var(--border); vertical-align: middle; border-radius: 3px; }
+/* Meldungen */
+.msgs { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.msg { padding: 7px 10px; border-radius: 7px; font-size: 14px; border-left: 4px solid; }
+.msg.err { background: var(--err-bg); border-color: var(--err); color: var(--text); }
+.msg.warn { background: var(--warn-bg); border-color: var(--warn); }
+.msg.info { background: var(--info-bg); border-color: var(--info); }
+.msg.ok { background: var(--ok-bg); border-color: var(--ok); }
+.msg[data-row] { cursor: pointer; }
+/* Auswertung */
+.kvgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 8px; }
+.kv { background: var(--calc-bg); border-radius: 8px; padding: 7px 10px; }
+.kv .k { font-size: 12px; color: var(--muted); }
+.kv .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kv.good { background: var(--ok-bg); } .kv.good .v { color: var(--ok); }
+.kv.bad { background: var(--err-bg); } .kv.bad .v { color: var(--err); }
+table.std { border-collapse: collapse; font-size: 14px; width: 100%; }
+table.std th, table.std td { border: 1px solid var(--border-soft); padding: 4px 8px; text-align: right; font-variant-numeric: tabular-nums; }
+table.std th { background: var(--accent-soft); text-align: center; font-size: 12.5px; }
+table.std td.l, table.std th.l { text-align: left; }
+.scrollx { overflow-x: auto; }
+/* Dialog */
+dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); max-width: min(640px, calc(100vw - 32px)); width: 100%; padding: 0; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+.dlg-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-soft); font-weight: 700; }
+.dlg-b { padding: 12px 16px 16px; }
+.dlg-b .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: 10px; }
+.dlg-b .box { white-space: pre-line; background: var(--calc-bg); border-radius: 7px; padding: 8px 10px; font-variant-numeric: tabular-nums; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13.5px; overflow-x: auto; }
+.dlg-b .box.res { background: var(--ok-bg); font-weight: 700; }
+.dlg-b .note { margin-top: 10px; font-size: 13.5px; color: var(--muted); }
+/* Skizze */
+.svgwrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--surface); }
+.svgwrap svg { display: block; }
+/* Übung */
+.ue-ok { background: var(--ok-bg) !important; border-color: var(--ok) !important; }
+.ue-bad { background: var(--err-bg) !important; border-color: var(--err) !important; }
+/* Info-Seiten */
+.prose p, .prose li { max-width: 80ch; }
+.prose code, .formel { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; background: var(--calc-bg); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+.badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.plist { display: flex; flex-direction: column; gap: 6px; }
+.pitem { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--border-soft); border-radius: 8px; }
+.pitem.on { border-color: var(--accent); background: var(--accent-soft); }
+.pitem .t { flex: 1 1 200px; min-width: 0; }
+#druck { display: none; }
+footer.ft { text-align: center; color: var(--muted); font-size: 12.5px; padding: 8px 16px 24px; }
+@media (max-width: 640px) {
+  main { padding: 12px; }
+  .card { padding: 12px; }
+  .top-inner { padding: 8px 12px; }
+}
+/* ---------- Druck / PDF (Nivellementvordruck) ---------- */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff; color: #000; font-size: 9.5pt; }
+  header.top, main, footer.ft, dialog { display: none !important; }
+  #druck { display: block; }
+  #druck * { color: #000 !important; }
+  .dk-titel { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #000; padding-bottom: 2mm; margin-bottom: 2mm; }
+  .dk-titel h1 { font-size: 15pt; margin: 0; }
+  .dk-kopf { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #000; margin-bottom: 3mm; }
+  .dk-kopf div { border: 0.5px solid #000; padding: 1mm 2mm; min-height: 9mm; }
+  .dk-kopf b { display: block; font-size: 7pt; font-weight: 400; }
+  table.dk { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table.dk th, table.dk td { border: 0.6px solid #000; padding: 1mm 1.5mm; text-align: right; font-variant-numeric: tabular-nums; }
+  table.dk th { font-size: 7.5pt; text-align: center; background: #e8e8e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  table.dk td.l { text-align: left; }
+  table.dk tr { break-inside: avoid; }
+  table.dk td.in { background: #fffbe6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dk-aus { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border: 1px solid #000; margin-top: 3mm; break-inside: avoid; }
+  .dk-aus div { border: 0.5px solid #000; padding: 1mm 2mm; display: flex; justify-content: space-between; gap: 4mm; }
+  .dk-hinw { margin-top: 2mm; font-size: 8.5pt; break-inside: avoid; }
+  .dk-sig { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10mm; margin-top: 10mm; break-inside: avoid; }
+  .dk-sig div { border-top: 0.6px solid #000; padding-top: 1mm; font-size: 8pt; }
+  .dk-fuss { margin-top: 4mm; font-size: 7.5pt; }
+  .dk-skizze { break-before: page; }
+  .dk-skizze svg { max-width: 100%; height: auto; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><img src="icon.svg" alt="">Nivellement</div>
+    <div class="projname" id="projname"></div>
+    <label class="switch" title="Berechnete Zellen antippen, um Formel und Rechenweg zu sehen"><input type="checkbox" id="lern"> Lernmodus</label>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="feldbuch" class="on">Feldbuch</button>
+    <button data-tab="skizze">Skizze</button>
+    <button data-tab="abstecken">Abstecken</button>
+    <button data-tab="ueben">Üben</button>
+    <button data-tab="zeichen">Zeichenerklärung</button>
+    <button data-tab="info">Info / Lernen</button>
+    <button data-tab="projekte">Projekte &amp; Export</button>
+  </nav>
+</header>
+
+<main>
+<!-- ================= FELDBUCH ================= -->
+<section class="tab on" id="t-feldbuch">
+  <div class="card">
+    <h2>Projekt</h2>
+    <div class="grid" id="kopf"></div>
+  </div>
+  <div class="card">
+    <h2>Anschluss</h2>
+    <div class="grid">
+      <label class="f">H_A – Anfangspunkt [m ü. NHN]<input class="in" id="HA" inputmode="decimal" autocomplete="off" placeholder="z. B. 74,251"></label>
+      <label class="f">H_E,soll – Endpunkt Sollhöhe [m ü. NHN]<input class="in" id="HEsoll" inputmode="decimal" autocomplete="off" placeholder="leer = keine Fehlerverteilung"></label>
+      <label class="f" style="justify-content:flex-end"><span class="switch"><input type="checkbox" id="schleife"> Schleifennivellement (zurück zum Anfangspunkt, ΔH_soll = 0)</span></label>
+    </div>
+    <details class="einst">
+      <summary>Einstellungen für dieses Projekt</summary>
+      <div class="grid" style="margin-top:8px">
+        <label class="f">Faktor c in f = c·√s [mm/√km]<input class="in" id="e-c" inputmode="decimal"></label>
+        <label class="f">Vorzeichen Widerspruch W
+          <select id="e-wKonv"><option value="a">a) RWTH-Vordruck: W = Soll − Ist (ΣK = W)</option><option value="b">b) Infoblatt HSBK: W = Ist − Soll (K = −W)</option></select></label>
+        <label class="f">Warnung Zielweite über [m]<input class="in" id="e-maxZw" inputmode="decimal"></label>
+        <label class="f">Warnung Zielweitendifferenz R/V über [m]<input class="in" id="e-maxDiff" inputmode="decimal"></label>
+        <label class="f">Warnung Doppelaufnahme über [mm]<input class="in" id="e-maxDoppel" inputmode="decimal"></label>
+        <label class="f" style="justify-content:flex-end"><span class="switch"><input type="checkbox" id="e-gleich"> Ersatzverfahren ohne Zielweiten: W gleichmäßig je Aufstellung verteilen</span></label>
+      </div>
+      <p class="small muted">c = 15 nach Infoblatt HSBK ist eine Unterrichts-/Lehrbuchkonvention, keine Normfestlegung. Das Ersatzverfahren ist nur ein Behelf und deshalb voreingestellt aus.</p>
+    </details>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Feldbuch</h2>
+      <div class="small muted"><span class="legend-in"></span> Eingabe &nbsp; <span class="legend-calc"></span> berechnet (Lernmodus: antippen)</div>
+    </div>
+    <p class="small muted" style="margin:6px 0 10px">Ein Wechselpunkt steht in <b>einer</b> Zeile: Vorblick (alte Aufstellung) und Rückblick (neue Aufstellung). Ein Zwischenpunkt bekommt eine eigene Zeile, nur mit Z. Taste Enter springt in die nächste Zeile.</p>
+    <div class="tbl-wrap"><table class="fb" id="fb"></table></div>
+    <div class="row" style="margin-top:10px">
+      <button class="b" id="add1">+ Zeile</button>
+      <button class="b" id="add5">+ 5 Zeilen</button>
+      <span style="flex:1"></span>
+      <button class="b" id="x-xlsx">Excel (.xlsx)</button>
+      <button class="b" id="x-pdf">PDF / Drucken</button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+  </div>
+  <div class="card">
+    <h2>Auswertung</h2>
+    <div class="kvgrid" id="aus"></div>
+    <h3>Aufstellungen</h3>
+    <div class="scrollx"><table class="std" id="aufst"></table></div>
+    <div id="doppel"></div>
+  </div>
+</section>
+
+<!-- ================= SKIZZE ================= -->
+<section class="tab" id="t-skizze">
+  <div class="card">
+    <h2>Schematische Skizze (Ansicht)</h2>
+    <p class="small muted" style="margin-top:0">Die Skizze ist <b>unmaßstäblich</b>: Abstände sind schematisch, Höhen stark überhöht. Sie entsteht aus den Feldbuch-Eingaben. Instrumentenhöhe über Boden: schematisch (spielt beim Nivellement keine Rolle).</p>
+    <div class="svgwrap" id="skizze"></div>
+  </div>
+</section>
+
+<!-- ================= ABSTECKEN ================= -->
+<section class="tab" id="t-abstecken">
+  <div class="card">
+    <h2>Absteckmodus – Höhen übertragen</h2>
+    <p class="small muted" style="margin-top:0">Soll-Lattenablesung = H_Visur − H_Soll. Wird an der Latte genau dieser Wert abgelesen, liegt der Lattenfuß auf Sollhöhe (z. B. Fundamentsohle, Meterriss = OKFF + 1,000 m, OK Schnurgerüst).</p>
+    <div class="grid">
+      <label class="f">Visurhöhe aus
+        <select id="ab-quelle"></select></label>
+      <label class="f" id="ab-man-wrap">Visurhöhe H_Visur [m]<input class="in" id="ab-visur" inputmode="decimal"></label>
+    </div>
+    <p class="small muted" id="ab-info"></p>
+    <div class="scrollx"><table class="std" id="ab-tab"></table></div>
+    <div class="row" style="margin-top:8px"><button class="b" id="ab-add">+ Sollpunkt</button></div>
+    <p class="small muted">Mit einer Ist-Ablesung prüft die App einen bereits hergestellten Punkt: H_ist = H_Visur − Ablesung_ist, Abweichung = H_ist − H_Soll. Es wird mit der gemessenen (unkorrigierten) Visurhöhe gerechnet, weil die Korrektur im Feld noch nicht bekannt ist.</p>
+  </div>
+</section>
+
+<!-- ================= ÜBEN ================= -->
+<section class="tab" id="t-ueben">
+  <div class="card">
+    <h2>Übungsaufgabe</h2>
+    <div class="row">
+      <label class="switch"><input type="checkbox" id="ue-z" checked> mit Zwischenpunkten</label>
+      <label class="switch"><input type="checkbox" id="ue-soll" checked> mit Sollhöhe und Fehlerverteilung</label>
+      <button class="b pri" id="ue-neu">Neue Aufgabe</button>
+    </div>
+    <div id="ue"></div>
+  </div>
+</section>
+
+<!-- ================= ZEICHEN ================= -->
+<section class="tab" id="t-zeichen">
+  <div class="card prose" id="zeichen"></div>
+</section>
+
+<!-- ================= INFO ================= -->
+<section class="tab" id="t-info">
+  <div class="card prose" id="info"></div>
+</section>
+
+<!-- ================= PROJEKTE ================= -->
+<section class="tab" id="t-projekte">
+  <div class="card">
+    <h2>Projekte (lokal in diesem Browser gespeichert)</h2>
+    <div class="row" style="margin-bottom:10px">
+      <button class="b pri" id="p-neu">Neues Projekt</button>
+      <button class="b" id="p-bspA">Beispiel A laden</button>
+      <button class="b" id="p-bspB">Beispiel B laden</button>
+      <button class="b" id="p-bspC">Beispiel C laden</button>
+    </div>
+    <div class="plist" id="plist"></div>
+  </div>
+  <div class="card">
+    <h2>Export / Import</h2>
+    <div class="row">
+      <button class="b" id="e-xlsx">Excel (.xlsx, mit Formeln)</button>
+      <button class="b" id="e-pdf">PDF (Vordruck, über Drucken)</button>
+      <button class="b" id="e-csv">CSV exportieren</button>
+      <button class="b" id="e-json">Sicherung (.json)</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="b">CSV importieren<input type="file" id="i-csv" accept=".csv,.txt,text/csv" hidden></label>
+      <label class="b">Sicherung (.json) einlesen<input type="file" id="i-json" accept=".json,application/json" hidden></label>
+    </div>
+    <p class="small muted">CSV-Format: Semikolon als Trenner, Komma als Dezimalzeichen, UTF-8. Kopfzeile <code>Punkt;ZwR;ZwV;R;Z;V;Bemerkung</code>. Optional stehen davor Zeilen wie <code>H_A;74,251</code>, <code>H_E,soll;69,205</code>, <code>Projekt;…</code>. Der CSV-Export der App hat genau dieses Format.</p>
+    <p class="small muted">PDF: Im Druckdialog „Als PDF speichern“ wählen (A4 quer). Seite 2 enthält die Skizze.</p>
+  </div>
+  <div class="card">
+    <h2>Eigene Bemerkungen</h2>
+    <p class="small muted" style="margin-top:0">Ergänzen die Auswahlliste der Spalte „Bemerkung“ (eine je Zeile). Freier Text ist in der Tabelle immer erlaubt; neue Texte werden hier automatisch ergänzt.</p>
+    <textarea id="eigBem" rows="5" style="width:100%"></textarea>
+  </div>
+  <div class="card small muted">
+    Alle Daten bleiben in diesem Browser auf diesem Gerät. Kein Server, kein Login. Wer Browserdaten löscht, löscht auch die Projekte, deshalb regelmäßig eine Sicherung (.json) exportieren.
+  </div>
+</section>
+</main>
+<footer class="ft">Lern- und Übungswerkzeug Nivellement · Fachschule Bautechnik · kein amtliches Vermessungsprogramm · Normwerte und Faktoren prüfbedürftig</footer>
+
+<dialog id="dlg">
+  <div class="dlg-h"><span id="dlg-t"></span><button class="b sm" id="dlg-x" aria-label="Schließen">✕</button></div>
+  <div class="dlg-b" id="dlg-b"></div>
+</dialog>
+
+<datalist id="bemliste"></datalist>
+<div id="druck"></div>
+
+<script src="core.js?v=1.0.1"></script>
+<script src="beispiele.js?v=1.0.1"></script>
+<script src="app.js?v=1.0.1"></script>
+</body>
+</html>
